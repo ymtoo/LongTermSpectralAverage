@@ -4,13 +4,15 @@ using Dates
 using DSP
 using GLMakie
 using ProgressMeter
+using SignalAnalysis: SampledSignal
 using Statistics
 using WAV
 
 export ltsa, ltsa_plot
 
-function ltsa(xs::AbstractVector{String}; fs::Real = 1, n::Int = 1024, noverlap::Int = 512)
+function ltsa(xs::AbstractVector{String}; n::Int = 1024, noverlap::Int = 512)
     numtimes = length(xs)
+    _, fs = wavread(first(xs); subrange=1)
     freqs = DSP.rfftfreq(n, fs)
     P = zeros(length(freqs), numtimes)
     prog = Progress(numtimes)
@@ -42,13 +44,15 @@ function ltsa(xs::AbstractVector{<:VecOrMat{T}}; fs::Real = 1, n::Int = 1024, no
     end
     P, freqs
 end
+ltsa(ss::AbstractVector{SampledSignal}; n::Int = 1024, noverlap::Int = 512) = ltsa(samples(ss); 
+                                                                                   fs = framerate(ss), 
+                                                                                   n = n, 
+                                                                                   noverlap = noverlap)
 
 function ltsa_plot(xs::AbstractVector{T}, 
                    starttimes::AbstractVector{DateTime}; 
-                   fs::Real = 1, 
-                   n::Int = 1024, 
-                   noverlap::Int = 512) where {T}
-    P, freqs = ltsa(xs; fs = fs, n = n, noverlap = noverlap)
+                   kwargs...) where {T}
+    P, freqs = ltsa(xs; kwargs...)
     ltsa_plot(P, starttimes, freqs)
 end
 
